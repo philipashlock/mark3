@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WYSIWYG Markdown Editor</title>
+
+    <!-- ProseMirror CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prosemirror-gapcursor@1.3.2/style/gapcursor.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #ffffff;
+            color: #24292e;
+            overflow: hidden;
+        }
+
+        #editor-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+
+        #toolbar {
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #e1e4e8;
+            display: none;
+            gap: 4px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toolbar-button {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #d1d5da;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #24292e;
+            transition: all 0.2s;
+        }
+
+        .toolbar-button:hover {
+            background: #f3f3f3;
+            border-color: #0969da;
+        }
+
+        .toolbar-button.active {
+            background: #0969da;
+            color: white;
+            border-color: #0969da;
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: #d1d5da;
+            margin: 0 4px;
+        }
+
+        #editor {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            outline: none;
+        }
+
+        /* ProseMirror Editor Styles */
+        .ProseMirror {
+            outline: none;
+            min-height: 100%;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .ProseMirror p {
+            margin: 0.75em 0;
+            line-height: 1.6;
+        }
+
+        .ProseMirror h1 {
+            font-size: 2em;
+            font-weight: 700;
+            margin: 0.67em 0;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+
+        .ProseMirror h2 {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin: 0.75em 0;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+
+        .ProseMirror h3 {
+            font-size: 1.25em;
+            font-weight: 700;
+            margin: 0.83em 0;
+        }
+
+        .ProseMirror h4 {
+            font-size: 1em;
+            font-weight: 700;
+            margin: 0.9em 0;
+        }
+
+        .ProseMirror h5 {
+            font-size: 0.875em;
+            font-weight: 700;
+            margin: 0.95em 0;
+        }
+
+        .ProseMirror h6 {
+            font-size: 0.85em;
+            font-weight: 700;
+            margin: 1em 0;
+        }
+
+        .ProseMirror strong {
+            font-weight: 700;
+        }
+
+        .ProseMirror em {
+            font-style: italic;
+        }
+
+        .ProseMirror u {
+            text-decoration: underline;
+        }
+
+        .ProseMirror code {
+            background: #f6f8fa;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #e83e8c;
+        }
+
+        .ProseMirror pre {
+            background: #f6f8fa;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1em 0;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
+        }
+
+        .ProseMirror pre code {
+            background: transparent;
+            padding: 0;
+            color: #24292e;
+        }
+
+        .ProseMirror blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding-left: 16px;
+            margin: 1em 0;
+            color: #6a737d;
+            font-style: italic;
+        }
+
+        .ProseMirror a {
+            color: #0969da;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .ProseMirror a:hover {
+            text-decoration: underline;
+        }
+
+        .ProseMirror ul {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+
+        .ProseMirror ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+
+        .ProseMirror li {
+            margin: 0.25em 0;
+        }
+
+        .ProseMirror hr {
+            border: none;
+            border-top: 1px solid #eaecef;
+            margin: 1em 0;
+        }
+
+        /* Webkit scrollbar styling for light mode */
+        ::-webkit-scrollbar {
+            width: 15px;
+            height: 15px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 8px;
+            border: 3px solid transparent;
+            background-clip: padding-box;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a6a6a6;
+            background-clip: padding-box;
+        }
+
+        ::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
+        /* Dark mode */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #1e1e1e;
+                color: #d4d4d4;
+            }
+
+            #toolbar {
+                background: #2d2d30;
+                border-bottom-color: #3e3e42;
+            }
+
+            .toolbar-button {
+                background: #3e3e42;
+                border-color: #555555;
+                color: #cccccc;
+            }
+
+            .toolbar-button:hover {
+                background: #4e4e54;
+                border-color: #0969da;
+            }
+
+            .ProseMirror {
+                color: #d4d4d4;
+            }
+
+            .ProseMirror code {
+                background: #2d2d2d;
+                color: #ff79c6;
+            }
+
+            .ProseMirror pre {
+                background: #2d2d2d;
+            }
+
+            .ProseMirror blockquote {
+                border-left-color: #444444;
+                color: #9ca3af;
+            }
+
+            .ProseMirror a {
+                color: #60a5fa;
+            }
+
+            #editor {
+                background: #1e1e1e;
+            }
+
+            /* Dark mode scrollbar styling */
+            ::-webkit-scrollbar-thumb {
+                background: #555555;
+                border-color: #1e1e1e;
+                background-clip: padding-box;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #707070;
+                background-clip: padding-box;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="editor-container">
+        <div id="toolbar">
+            <button class="toolbar-button" id="btn-h1" title="Heading 1">H1</button>
+            <button class="toolbar-button" id="btn-h2" title="Heading 2">H2</button>
+            <button class="toolbar-button" id="btn-h3" title="Heading 3">H3</button>
+            <div class="toolbar-divider"></div>
+            <button class="toolbar-button" id="btn-bold" title="Bold">Bold</button>
+            <button class="toolbar-button" id="btn-italic" title="Italic">Italic</button>
+            <button class="toolbar-button" id="btn-underline" title="Underline">Underline</button>
+            <div class="toolbar-divider"></div>
+            <button class="toolbar-button" id="btn-bullet" title="Bullet List">• List</button>
+            <button class="toolbar-button" id="btn-ordered" title="Ordered List">1. List</button>
+            <div class="toolbar-divider"></div>
+            <button class="toolbar-button" id="btn-blockquote" title="Block Quote">Quote</button>
+            <button class="toolbar-button" id="btn-code" title="Code Block">Code</button>
+        </div>
+        <div id="editor"></div>
+    </div>
+
+    <!-- ProseMirror - Load local UMD bundle -->
+    <script src="prosemirror-bundle.js"></script>
+
+    <!-- Marked.js for markdown parsing -->
+    <script src="marked.js"></script>
+
+    <script>
+        console.log('🔍 wysiwyg-editor.html script block started');
+
+        function initEditor() {
+            console.log('🚀 initEditor() called');
+            console.log('Starting WYSIWYG editor initialization...');
+
+            // Debug: Check what globals are available
+            console.log('window.PM:', typeof window.PM);
+            console.log('window.PM.EditorState:', typeof window.PM?.EditorState);
+            console.log('window.PM.EditorView:', typeof window.PM?.EditorView);
+            console.log('window.PM.Schema:', typeof window.PM?.Schema);
+
+            // Wait for PM bundle to load
+            if (!window.PM || !window.PM.EditorState || !window.PM.EditorView || !window.PM.Schema) {
+                console.warn('❌ ProseMirror bundle not loaded yet, retrying...');
+                console.warn('  PM available?', !!window.PM);
+                console.warn('  EditorState available?', !!window.PM?.EditorState);
+                console.warn('  EditorView available?', !!window.PM?.EditorView);
+                console.warn('  Schema available?', !!window.PM?.Schema);
+                console.warn('  Retrying in 100ms...');
+                setTimeout(initEditor, 100);
+                return;
+            }
+
+            console.log('✅ ProseMirror bundle loaded successfully');
+            console.log('  PM.EditorState:', typeof window.PM.EditorState);
+            console.log('  PM.EditorView:', typeof window.PM.EditorView);
+            console.log('  PM.Schema:', typeof window.PM.Schema);
+
+            try {
+                console.log('🔧 Using standard markdown schema from prosemirror-markdown...');
+                // Use the standard markdown schema from prosemirror-markdown
+                // This ensures complete compatibility between parser, serializer, and editor
+                const mySchema = window.PM.schema;
+                console.log('✅ Standard markdown schema loaded successfully');
+
+                // Create editor state and view
+                console.log('🔧 Getting editor container...');
+                const editorContainer = document.getElementById('editor');
+                if (!editorContainer) {
+                    throw new Error('Editor container not found');
+                }
+                console.log('✅ Editor container found');
+
+                // Global state
+                let currentHTML = '';
+                let currentMarkdown = '';  // Store the original markdown
+
+                // Helper to notify Swift
+                console.log('📨 Defining notifySwift function...');
+                function notifySwift(message) {
+                    console.log('📨 notifySwift called with action:', message.action);
+                    console.log('📨 window.webkit available?', !!window.webkit);
+                    console.log('📨 window.webkit.messageHandlers available?', !!window.webkit?.messageHandlers);
+                    console.log('📨 window.webkit.messageHandlers.editorBridge available?', !!window.webkit?.messageHandlers?.editorBridge);
+
+                    if (window.webkit?.messageHandlers?.editorBridge) {
+                        try {
+                            console.log('✅ Sending message to Swift:', message);
+                            window.webkit.messageHandlers.editorBridge.postMessage(message);
+                            console.log('✅ Message sent successfully');
+                        } catch (e) {
+                            console.error('❌ Failed to notify Swift:', e);
+                        }
+                    } else {
+                        console.error('❌ Cannot send message - webkit bridge not available');
+                        console.error('   Available on window:', Object.keys(window).filter(k => k.includes('webkit') || k.includes('bridge')));
+                    }
+                }
+
+                // Create editor view
+                console.log('🔧 Creating editor state...');
+
+                // Setup keymap for basic editing
+                console.log('🔧 Creating keymap with Enter/Backspace support...');
+                const baseKeymap = {
+                    'Enter': window.PM.commands.splitBlock,
+                    'Backspace': window.PM.commands.deleteSelection,
+                    'Ctrl-z': window.PM.commands.undo,
+                    'Ctrl-y': window.PM.commands.redo,
+                    'Cmd-z': window.PM.commands.undo,
+                    'Cmd-y': window.PM.commands.redo,
+                    'Cmd-Shift-z': window.PM.commands.redo
+                };
+                console.log('✅ Keymap created');
+                console.log('📝 keymap module available?', !!window.PM.keymap);
+
+                let keymapPlugin;
+                if (window.PM.keymap && window.PM.keymap.keymap) {
+                    console.log('✅ Creating keymap plugin with window.PM.keymap.keymap');
+                    keymapPlugin = window.PM.keymap.keymap(baseKeymap);
+                } else {
+                    console.warn('⚠️ window.PM.keymap not available, using history only');
+                    keymapPlugin = null;
+                }
+
+                const plugins = [
+                    window.PM.history.history(),
+                    window.PM.gapcursor.gapCursor()
+                ];
+
+                if (keymapPlugin) {
+                    plugins.unshift(keymapPlugin);
+                }
+
+                console.log('🔧 Creating editor state with', plugins.length, 'plugins...');
+                const state = window.PM.EditorState.create({
+                    doc: mySchema.node('doc', null, [
+                        mySchema.node('paragraph')
+                    ]),
+                    plugins: plugins
+                });
+                console.log('✅ Editor state created with', plugins.length, 'plugins');
+
+                let editorView;
+                try {
+                    console.log('🔧 Creating editor view...');
+                    editorView = new window.PM.EditorView(editorContainer, {
+                        state: state,
+                        dispatchTransaction(transaction) {
+                            const newState = editorView.state.apply(transaction);
+                            editorView.updateState(newState);
+
+                            // Track changes and update markdown representation in real-time
+                            if (transaction.docChanged) {
+                                try {
+                                    // Serialize the new document to markdown using the standard serializer
+                                    if (window.PM && window.PM.defaultMarkdownSerializer) {
+                                        const markdown = window.PM.defaultMarkdownSerializer.serialize(newState.doc);
+
+                                        // Update our internal markdown representation
+                                        currentMarkdown = markdown;
+
+                                        // Send the updated markdown to Swift
+                                        notifySwift({
+                                            action: 'contentChanged',
+                                            content: markdown
+                                        });
+
+                                        console.log('📝 [JS] dispatchTransaction: serialized markdown, length:', markdown.length);
+                                    }
+                                } catch (e) {
+                                    console.error('❌ Error serializing markdown on edit:', e);
+                                }
+                            }
+                        }
+                    });
+                    console.log('✅ Editor view created successfully');
+
+                    console.log('✅ WYSIWYG editor initialized successfully');
+
+                    // Setup toolbar buttons
+                    document.getElementById('btn-h1').addEventListener('click', () => {
+                        window.PM.commands.setBlockType(mySchema.nodes.heading, { level: 1 })(editorView.state, editorView.dispatch);
+                        editorView.focus();
+                    });
+
+                    document.getElementById('btn-h2').addEventListener('click', () => {
+                        window.PM.commands.setBlockType(mySchema.nodes.heading, { level: 2 })(editorView.state, editorView.dispatch);
+                        editorView.focus();
+                    });
+
+                    document.getElementById('btn-h3').addEventListener('click', () => {
+                        window.PM.commands.setBlockType(mySchema.nodes.heading, { level: 3 })(editorView.state, editorView.dispatch);
+                        editorView.focus();
+                    });
+
+                    document.getElementById('btn-bold').addEventListener('click', () => {
+                        window.PM.commands.toggleMark(mySchema.marks.strong)(editorView.state, editorView.dispatch);
+                        editorView.focus();
+                    });
+
+                    document.getElementById('btn-italic').addEventListener('click', () => {
+                        window.PM.commands.toggleMark(mySchema.marks.em)(editorView.state, editorView.dispatch);
+                        editorView.focus();
+                    });
+
+                    document.getElementById('btn-underline').addEventListener('click', () => {
+                        window.PM.commands.toggleMark(mySchema.marks.u)(editorView.state, editorView.dispatch);
+                        editorView.focus();
+                    });
+
+                    document.getElementById('btn-bullet').addEventListener('click', () => {
+                        window.PM.schemaList.wrapInList(mySchema.nodes.bullet_list)(editorView.state, editorView.dispatch);
+                        editorView.focus();
+                    });
+
+                    document.getElementById('btn-ordered').addEventListener('click', () => {
+                        window.PM.schemaList.wrapInList(mySchema.nodes.ordered_list)(editorView.state, editorView.dispatch);
+                        editorView.focus();
+                    });
+
+                    document.getElementById('btn-blockquote').addEventListener('click', () => {
+                        window.PM.commands.wrapIn(mySchema.nodes.blockquote)(editorView.state, editorView.dispatch);
+                        editorView.focus();
+                    });
+
+                    document.getElementById('btn-code').addEventListener('click', () => {
+                        window.PM.commands.setBlockType(mySchema.nodes.code_block)(editorView.state, editorView.dispatch);
+                        editorView.focus();
+                    });
+
+                    // Expose API to Swift
+                    window.editorAPI = {
+                        setContent: function(markdown) {
+                            if (markdown === currentMarkdown) return;
+
+                            try {
+                                console.log('📝 [JS] Setting editor content via markdown parser');
+                                console.log('📝 [JS] Markdown length:', markdown.length);
+
+                                // Store the original markdown for later retrieval
+                                currentMarkdown = markdown;
+                                console.log('📝 [JS] Stored original markdown, length:', currentMarkdown.length);
+
+                                // Use the standard markdown parser from prosemirror-markdown
+                                if (!window.PM.defaultMarkdownParser) {
+                                    throw new Error('defaultMarkdownParser not available');
+                                }
+
+                                console.log('📝 [JS] Parsing markdown using prosemirror-markdown parser');
+                                const parsedDoc = window.PM.defaultMarkdownParser.parse(markdown);
+                                console.log('📝 [JS] Parsed document created, size:', parsedDoc.content.size);
+
+                                // Create new editor state with parsed content, preserving the same plugins
+                                const newPlugins = [];
+                                if (keymapPlugin) {
+                                    newPlugins.push(keymapPlugin);
+                                }
+                                newPlugins.push(window.PM.history.history());
+                                newPlugins.push(window.PM.gapcursor.gapCursor());
+
+                                const newState = window.PM.EditorState.create({
+                                    doc: parsedDoc,
+                                    plugins: newPlugins
+                                });
+
+                                // Update editor view with new state
+                                editorView.updateState(newState);
+                                console.log('✅ [JS] Content set successfully using standard markdown parser');
+                            } catch (e) {
+                                console.error('❌ Error setting content:', e);
+                                console.error('Stack:', e.stack);
+                            }
+                        },
+
+                        getContent: function() {
+                            try {
+                                // Return the text content as markdown representation
+                                return editorView.state.doc.textContent;
+                            } catch (e) {
+                                console.error('Error getting content:', e);
+                                return '';
+                            }
+                        },
+
+                        syncContent: function() {
+                            try {
+                                console.log('📝 [JS] syncContent() called from Swift');
+
+                                // Use MarkdownSerializer from prosemirror-markdown to convert editor state to markdown
+                                if (!window.PM || !window.PM.MarkdownSerializer) {
+                                    console.warn('⚠️ [JS] MarkdownSerializer not available, using stored markdown');
+                                    const markdown = currentMarkdown;
+                                    console.log('📝 [JS] Current stored markdown, length:', markdown.length);
+
+                                    notifySwift({
+                                        action: 'syncRequested',
+                                        content: markdown
+                                    });
+                                    return markdown;
+                                }
+
+                                // Get the current document from editor state
+                                const editorDoc = editorView.state.doc;
+                                console.log('📝 [JS] Document node type:', editorDoc.type.name);
+                                console.log('📝 [JS] Document content nodes:', editorDoc.childCount);
+
+                                // Serialize the document to markdown
+                                const serializer = new window.PM.MarkdownSerializer(
+                                    window.PM.defaultMarkdownParser.marks,
+                                    window.PM.defaultMarkdownParser.nodes
+                                );
+                                const markdown = serializer.serialize(editorDoc);
+                                console.log('📝 [JS] Serialized markdown, length:', markdown.length);
+                                console.log('📝 [JS] Content preview:', markdown.substring(0, 100));
+
+                                // Store the serialized markdown for consistency
+                                currentMarkdown = markdown;
+
+                                // Notify Swift that sync was requested
+                                notifySwift({
+                                    action: 'syncRequested',
+                                    content: markdown
+                                });
+
+                                console.log('✅ [JS] Content sync sent to Swift');
+                                return markdown;
+                            } catch (e) {
+                                console.error('❌ Error syncing content:', e);
+                                return '';
+                            }
+                        },
+
+                        focus: function() {
+                            editorView.focus();
+                        },
+
+                        executeCommand: function(command) {
+                            try {
+                                console.log('📝 [JS] Executing command:', command);
+
+                                const state = editorView.state;
+                                const dispatch = editorView.dispatch;
+
+                                switch(command) {
+                                    case 'toggleHeading1':
+                                        window.PM.commands.setBlockType(mySchema.nodes.heading, { level: 1 })(state, dispatch);
+                                        break;
+                                    case 'toggleHeading2':
+                                        window.PM.commands.setBlockType(mySchema.nodes.heading, { level: 2 })(state, dispatch);
+                                        break;
+                                    case 'toggleHeading3':
+                                        window.PM.commands.setBlockType(mySchema.nodes.heading, { level: 3 })(state, dispatch);
+                                        break;
+                                    case 'toggleBold':
+                                        window.PM.commands.toggleMark(mySchema.marks.strong)(state, dispatch);
+                                        break;
+                                    case 'toggleItalic':
+                                        window.PM.commands.toggleMark(mySchema.marks.em)(state, dispatch);
+                                        break;
+                                    case 'toggleUnderline':
+                                        window.PM.commands.toggleMark(mySchema.marks.u)(state, dispatch);
+                                        break;
+                                    case 'toggleCode':
+                                        window.PM.commands.toggleMark(mySchema.marks.code)(state, dispatch);
+                                        break;
+                                    case 'toggleBulletList':
+                                        window.PM.commands.wrapIn(mySchema.nodes.bullet_list)(state, dispatch);
+                                        break;
+                                    case 'toggleOrderedList':
+                                        window.PM.commands.wrapIn(mySchema.nodes.ordered_list)(state, dispatch);
+                                        break;
+                                    case 'toggleBlockquote':
+                                        window.PM.commands.wrapIn(mySchema.nodes.blockquote)(state, dispatch);
+                                        break;
+                                    case 'toggleCodeBlock':
+                                        window.PM.commands.setBlockType(mySchema.nodes.code_block)(state, dispatch);
+                                        break;
+                                    default:
+                                        console.warn('⚠️ [JS] Unknown command:', command);
+                                }
+
+                                console.log('✅ [JS] Command executed:', command);
+                            } catch (e) {
+                                console.error('❌ Error executing command:', e);
+                                console.error('Command:', command);
+                                console.error('Stack:', e.stack);
+                            }
+                        },
+
+                        getActiveMarks: function() {
+                            try {
+                                const marks = [];
+                                const { from, to } = editorView.state.selection;
+
+                                // Check marks at current selection
+                                if (editorView.state.selection.empty) {
+                                    // Check stored marks for empty selection
+                                    const storedMarks = editorView.state.storedMarks;
+                                    if (storedMarks) {
+                                        storedMarks.forEach(mark => {
+                                            marks.push(mark.type.name);
+                                        });
+                                    }
+                                } else {
+                                    // Check marks in selection
+                                    editorView.state.doc.nodesBetween(from, to, node => {
+                                        if (node.isInline) {
+                                            node.marks.forEach(mark => {
+                                                if (!marks.includes(mark.type.name)) {
+                                                    marks.push(mark.type.name);
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+
+                                console.log('📝 [JS] Active marks:', marks);
+                                return marks;
+                            } catch (e) {
+                                console.error('❌ Error getting active marks:', e);
+                                return [];
+                            }
+                        }
+                    };
+
+                    window.milkdownEditor = window.editorAPI;
+
+                    notifySwift({ action: 'editorReady' });
+
+                } catch (error) {
+                    console.error('❌ Failed to create editor view:', error);
+                    console.error('Stack:', error.stack);
+                    notifySwift({ action: 'error', error: error.toString() });
+                }
+
+            } catch (error) {
+                console.error('❌ Failed to initialize editor:', error);
+                console.error('Stack:', error.stack);
+
+                if (window.webkit?.messageHandlers?.editorBridge) {
+                    try {
+                        window.webkit.messageHandlers.editorBridge.postMessage({
+                            action: 'error',
+                            error: 'Failed to initialize editor: ' + error.toString()
+                        });
+                    } catch (e) {
+                        console.error('Could not notify Swift of error');
+                    }
+                }
+            }
+        }
+
+        // Start initialization after all scripts have loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initEditor);
+        } else {
+            setTimeout(initEditor, 100);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+*.DS_Store
+build
+bundle-prosemirror.js
+MarkdownEditor/Assets.xcassets
+MarkdownEditor.xcodeproj
+MarkdownEditorTests
+MarkdownEditorUITests
