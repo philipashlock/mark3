@@ -41,7 +41,7 @@ struct RawEditorView: View {
                         print("🟡 [RawEditorView] View appeared, markdownContent: \(bridge.markdownContent.prefix(100))")
                     }
             } else {
-                MarkdownHighlighterView(bridge: bridge)
+                SwiftDownHighlighterView(bridge: bridge)
             }
         }
     }
