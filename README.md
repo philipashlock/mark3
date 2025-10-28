@@ -1,6 +1,9 @@
 # mark3
 Multi-Modal Markdown. See [Demo Readme](./Demo/README.md) for video
 
+<img src="./MarkdownEditor/Assets.xcassets/Mark3.appiconset/icon_512x512.png" />
+
+
 <img width="2032" height="1192" alt="Screenshot 2025-10-27 at 7 42 40 AM" src="https://github.com/user-attachments/assets/71bea312-9d34-45a9-a63e-7be1fa69682b" />
 <img width="2032" height="1192" alt="Screenshot 2025-10-27 at 7 42 26 AM" src="https://github.com/user-attachments/assets/51b3e649-b56d-4c8c-a594-f64951fee2ec" />
 <img width="2032" height="1192" alt="Screenshot 2025-10-27 at 7 42 19 AM" src="https://github.com/user-attachments/assets/6438db6c-36aa-4677-a1bf-c5cbe1db9ca3" />
