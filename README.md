@@ -1,5 +1,5 @@
-# mark3
-Multi-Modal Markdown. See [Demo Readme](./Demo/README.md) for video
+# Mark3
+Multi-Modal Markdown for MacOS. See [Demo Readme](./Demo/README.md) for video
 
 <img src="./MarkdownEditor/Assets.xcassets/Mark3.appiconset/icon_512x512.png" />
 
